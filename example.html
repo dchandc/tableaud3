@@ -40,13 +40,15 @@
 			var graphWidth = panelWidth - 2 * graphPaddingX;
 			var graphHeight = panelHeight - 2 * graphPaddingY;
 			var barPadding = 0;
+			var fieldTop = -1;
+			var fieldBot = -1;
 			
 			var svg = d3.select("body")
 				.append("svg")
 				.attr("width", svgWidth)
 				.attr("height", svgHeight)
 				
-			svg.append("rect")
+			svg.append("g").append("rect")
 				.attr("x", 0)
 				.attr("y", 0)
 				.attr("width", svgWidth)
@@ -59,18 +61,12 @@
 				.attr("width", panelWidth)
 				.attr("height", panelHeight)
 				
-			truePanelSvg.append("rect")
+			truePanelSvg.append("g").append("rect")
 				.attr("x", 0)
 				.attr("y", 0)
 				.attr("width", panelWidth)
 				.attr("height", panelHeight)
 				.attr("fill", "white")
-				
-			var trueGraphSvg = truePanelSvg.append("svg")
-				.attr("x", graphPaddingX)
-				.attr("y", graphPaddingY)
-				.attr("width", graphWidth)
-				.attr("height", graphHeight)
 				
 			var falsePanelSvg = svg.append("svg")
 				.attr("x", svgWidth - panelPaddingX - panelWidth)
@@ -78,18 +74,12 @@
 				.attr("width", panelWidth)
 				.attr("height", panelHeight)
 				
-			falsePanelSvg.append("rect")
+			falsePanelSvg.append("g").append("rect")
 				.attr("x", 0)
 				.attr("y", 0)
 				.attr("width", panelWidth)
 				.attr("height", panelHeight)
 				.attr("fill", "white")
-				
-			var falseGraphSvg = falsePanelSvg.append("svg")
-				.attr("x", graphPaddingX)
-				.attr("y", graphPaddingY)
-				.attr("width", graphWidth)
-				.attr("height", graphHeight)
 				
 			var buttonTopGroup = svg.append("g");
 			var buttonBotGroup = svg.append("g");
@@ -107,8 +97,136 @@
 				.style("-moz-column-rule", "2px outset #000000")
 				.style("column-rule", "2px outset #000000")
 				
+			var initializeGraph = function(panelSvg, dataKeys, dataArray, color, title) {
+				var xScale = d3.scale.linear()
+					.domain([0, dataArray.length])
+					.range([graphPaddingX, panelWidth - graphPaddingX])
+				
+				var yScale = d3.scale.linear()
+					.domain([0, 1])
+					.range([panelHeight - graphPaddingY, graphPaddingY])
+			
+				var xAxis = d3.svg.axis()
+					.scale(xScale)
+					.orient("bottom")
+					.ticks(5)
+				
+				var yAxis = d3.svg.axis()
+					.scale(yScale)
+					.orient("left")
+					.ticks(5)
+					
+				panelSvg.append("g")
+					.attr("id", "xAxis")
+					.attr("class", "axis")
+					.attr("transform", "translate(0," + (panelHeight - graphPaddingY) + ")")
+					.call(xAxis);
+
+				panelSvg.append("g")
+					.attr("id", "yAxis")
+					.attr("class", "axis")
+					.attr("transform", "translate(" + graphPaddingX + ", 0)")
+					.call(yAxis);
+
+				var zeroArray = [];
+				for (var i = 0; i < dataArray.length; i++) {
+					zeroArray[i] = 0;
+				}
+			
+				panelSvg.append("g").attr("id", "graph").selectAll("rect")
+					.data(zeroArray)
+					.enter().append("rect")
+					.style("fill", color)
+					.attr("x", function(d, i) {
+						return graphPaddingX + i * graphWidth / zeroArray.length;
+					})
+					.attr("y", function(d, i) {
+						return yScale(d);
+					})
+					.attr("width", graphWidth / zeroArray.length - barPadding)
+					.attr("height", function(d, i) {
+						return panelHeight - graphPaddingY - yScale(d);
+					})
+					.append("title")
+					.text(function(d) {
+						return d;
+					})
+				
+				panelSvg.append("text")
+					.text(title)
+					.attr("text-anchor", "middle")
+					.attr("x", panelWidth / 2)
+					.attr("y", panelHeight - graphPaddingY / 4)
+					.style("font-family", "sans-serif")
+			}
+			
+			var transitionGraph = function(panelSvg, dataKeys, dataArray, color) {
+				if (fieldTop == -1 || fieldBot == -1)
+					return;
+						
+				var mappedArray = dataArray.map(function(obj) {
+					if (fieldTop == fieldBot) {
+						return parseFloat(obj[dataKeys[fieldTop]]);
+					} else if (fieldTop >= 0 && fieldBot >= 0) {
+						var topValue = parseFloat(obj[dataKeys[fieldTop]]);
+						var botValue = parseFloat(obj[dataKeys[fieldBot]]);
+						if (botValue == 0) {
+							return 0;
+						} else {
+							return topValue / botValue;
+						}
+					} else {
+						return 0;
+					}
+				}).sort(function(a, b) {
+					if (a > b) {
+						return 1;
+					} else if (a < b) {
+						return -1;
+					} else {
+						return 0;
+					}
+				})
+				
+				var yScale = d3.scale.linear()
+					.domain([0, mappedArray[mappedArray.length - 1]])
+					.range([panelHeight - graphPaddingY, graphPaddingY])
+					
+				var yAxis = d3.svg.axis()
+					.scale(yScale)
+					.orient("left")
+					.ticks(5)
+					
+				panelSvg.select("#yAxis").call(yAxis)
+					
+				panelSvg.select("#graph").selectAll("rect")
+					.data(mappedArray)
+					.transition()
+					.delay(0)
+					.duration(1000)
+					.ease("linear")
+					.style("fill", color)
+					.attr("x", function(d, i) {
+						return graphPaddingX + i * graphWidth / mappedArray.length;
+					})
+					.attr("y", function(d, i) {
+						return yScale(d);
+					})
+					.attr("width", graphWidth / mappedArray.length - barPadding)
+					.attr("height", function(d, i) {
+						return panelHeight - graphPaddingY - yScale(d);
+					})
+					.select("title")
+					.text(function(d) {
+						return d;
+					})
+			}
+				
 			d3.csv("promise.csv", function(data) {
 				var dataKeys = [];
+				var trueArray = [];
+				var falseArray = [];
+				
 				if (!data[0].hasOwnProperty("defects")) {
 					return;
 				} else {
@@ -129,9 +247,7 @@
 					.style("font-family", "sans-serif")
 					.style("font-weight", "bold")
 					.style("font-size", "12px")
-				
-				var trueArray = [];
-				var falseArray = [];
+					
 				for (var i = 0; i < data.length; i++) {
 					var tmp = data[i];
 					if (tmp.defects == 'false') {
@@ -139,73 +255,6 @@
 					} else if (tmp.defects == 'true') {
 						trueArray.push(tmp);
 					}
-				}
-				
-				var fieldTop = -1;
-				var fieldBot = -1;
-				var transitionGraph = function(color, panelSvg, graphSvg, dataArray) {
-					console.log(fieldTop + " " + fieldBot);
-					
-					var mappedArray = dataArray.map(function(obj) {
-						if (fieldTop == -1 || fieldBot == -1) {
-							return 0;
-						} else if (fieldTop == fieldBot) {
-							return parseFloat(obj[dataKeys[fieldTop]]);
-						} else if (fieldTop >= 0 && fieldBot >= 0) {
-							var topValue = parseFloat(obj[dataKeys[fieldTop]]);
-							var botValue = parseFloat(obj[dataKeys[fieldBot]]);
-							if (botValue == 0) {
-								return 0;
-							} else {
-								return topValue / botValue;
-							}
-						} else {
-							return 0;
-						}
-					}).sort(function(a, b) {
-						if (a > b) {
-							return 1;
-						} else if (a < b) {
-							return -1;
-						} else {
-							return 0;
-						}
-					})
-					
-					console.log(mappedArray)
-					
-					var yScale = d3.scale.linear()
-						.domain([0, mappedArray[mappedArray.length - 1]])
-						.range([panelHeight - graphPaddingY, graphPaddingY])
-						
-					var yAxis = d3.svg.axis()
-						.scale(yScale)
-						.orient("left")
-						.ticks(5)
-						
-					panelSvg.select("#yAxis").call(yAxis)
-					
-					var innerYScale = d3.scale.linear()
-						.domain([0, mappedArray[mappedArray.length - 1]])
-						.range([0, graphHeight])
-						
-					graphSvg.selectAll("rect")
-						.data(mappedArray)
-						.transition()
-						.delay(0)
-						.duration(1000)
-						.ease("linear")
-						.style("fill", color)
-						.attr("x", function(d, i) {
-							return i * graphWidth / mappedArray.length;
-						})
-						.attr("y", function(d, i) {
-							return graphHeight - innerYScale(d);
-						})
-						.attr("width", graphWidth / mappedArray.length - barPadding)
-						.attr("height", function(d, i) {
-							return innerYScale(d);
-						})
 				}
 				
 				var maxKeySide = Math.min(buttonHeight - 2 * buttonPaddingY - interKeyPaddingY, (svgWidth - 2 * buttonPaddingX - interKeyPaddingX * dataKeys.length) / dataKeys.length)
@@ -225,8 +274,8 @@
 							.style("fill", function(d, i) {
 								return (fieldTop == i) ? "red" : "blue";
 							})
-						transitionGraph("green", truePanelSvg, trueGraphSvg, trueArray);
-						transitionGraph("red", falsePanelSvg, falseGraphSvg, falseArray);
+						transitionGraph(truePanelSvg, dataKeys, trueArray, "green");
+						transitionGraph(falsePanelSvg, dataKeys, falseArray, "red");
 					})
 					.append("title")
 					.text(function(d, i) {
@@ -265,8 +314,8 @@
 								return (fieldBot == i) ? "#ff6347" : "#3399ff";
 							}
 						);
-						transitionGraph("green", truePanelSvg, trueGraphSvg, trueArray);
-						transitionGraph("red", falsePanelSvg, falseGraphSvg, falseArray);
+						transitionGraph(truePanelSvg, dataKeys, trueArray, "green");
+						transitionGraph(falsePanelSvg, dataKeys, falseArray, "red");
 					})
 					.append("title")
 					.text(function(d, i) {
@@ -287,68 +336,9 @@
 					.attr("font-family", "sans-serif")
 					.attr("font-size", (maxKeySide / 2) + "px")
 					.attr("fill", "white")
-					
-				var initializeGraph = function(title, panelSvg, graphSvg, dataArray) {
-					var xScale = d3.scale.linear()
-						.domain([0, dataArray.length])
-						.range([graphPaddingX, panelWidth - graphPaddingX])
-					
-					var yScale = d3.scale.linear()
-						.domain([0, 1])
-						.range([panelHeight - graphPaddingY, graphPaddingY])
 				
-					var xAxis = d3.svg.axis()
-						.scale(xScale)
-						.orient("bottom")
-						.ticks(5)
-					
-					var yAxis = d3.svg.axis()
-						.scale(yScale)
-						.orient("left")
-						.ticks(5)
-						
-					panelSvg.append("g")
-						.attr("id", "xAxis")
-						.attr("class", "axis")
-						.attr("transform", "translate(0," + (panelHeight - graphPaddingY) + ")")
-						.call(xAxis);
-
-					panelSvg.append("g")
-						.attr("id", "yAxis")
-						.attr("class", "axis")
-						.attr("transform", "translate(" + graphPaddingX + ", 0)")
-						.call(yAxis);
-
-					var zeroArray = [];
-						for (var i = 0; i < dataArray.length; i++) {
-						zeroArray[i] = 0;
-					}
-				
-					graphSvg.selectAll("rect")
-						.data(zeroArray)
-						.enter().append("rect")
-						.style("fill", "green")
-						.attr("x", function(d, i) {
-							return i * graphWidth / zeroArray.length;
-						})
-						.attr("y", function(d, i) {
-							return graphHeight - d;
-						})
-						.attr("width", graphWidth / zeroArray.length - barPadding)
-						.attr("height", function(d, i) {
-							return d;
-						})
-					
-					panelSvg.append("text")
-						.text(title)
-						.attr("text-anchor", "middle")
-						.attr("x", panelWidth / 2)
-						.attr("y", panelHeight - graphPaddingY / 4)
-						.style("font-family", "sans-serif")
-				}
-				
-				initializeGraph("Defect-free Modules", truePanelSvg, trueGraphSvg, trueArray);	
-				initializeGraph("Defect-prone Modules", falsePanelSvg, falseGraphSvg, falseArray);
+				initializeGraph(truePanelSvg, dataKeys, trueArray, "green", "Defect-free Modules");	
+				initializeGraph(falsePanelSvg, dataKeys, falseArray, "red", "Defect-prone Modules");
 			});
 		</script>
     </body>
