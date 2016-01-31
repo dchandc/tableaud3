@@ -43,6 +43,7 @@
 			var fieldTop = -1;
 			var fieldBot = -1;
 			
+			// Initialize SVG elements and backgrounds.
 			var svg = d3.select("body")
 				.append("svg")
 				.attr("width", svgWidth)
@@ -81,6 +82,7 @@
 				.attr("height", panelHeight)
 				.attr("fill", "white")
 				
+			// Add multi-columned key div for clarity.
 			var keyDiv = d3.select("body")
 				.append("div")
 				.style("max-width", keyDivWidth + "px")
@@ -94,6 +96,7 @@
 				.style("-moz-column-rule", "2px outset #000000")
 				.style("column-rule", "2px outset #000000")
 				
+			// Set the axes and title. Initialize the bars first to allow transition to work.
 			var initializeGraph = function(panelSvg, dataKeys, dataArray, color, title) {
 				var xScale = d3.scale.linear()
 					.domain([0, dataArray.length])
@@ -157,6 +160,7 @@
 					.style("font-family", "sans-serif")
 			}
 			
+			// Calculate the ratio to display for each module, update the y-axis and transition.
 			var transitionGraph = function(panelSvg, dataKeys, dataArray, color) {
 				if (fieldTop == -1 || fieldBot == -1)
 					return;
@@ -224,6 +228,7 @@
 				var trueArray = [];
 				var falseArray = [];
 				
+				// Remove the "defects" key.
 				if (!data[0].hasOwnProperty("defects")) {
 					return;
 				} else {
@@ -234,17 +239,18 @@
 					}	
 				}
 				
+				// Print out the key-to-name information.
 				var keyString = "";
 				for (var keyIndex = 0; keyIndex < dataKeys.length; keyIndex++) {
 					keyString += (keyIndex + 1) + " = " + dataKeys[keyIndex] + "<br>";
 				}
-				
 				keyDiv.append("text")
 					.html(keyString)
 					.style("font-family", "sans-serif")
 					.style("font-weight", "bold")
 					.style("font-size", "12px")
 					
+				// Separate the data into defect-free and defect-prone modules.
 				for (var i = 0; i < data.length; i++) {
 					var tmp = data[i];
 					if (tmp.defects == 'false') {
@@ -254,6 +260,11 @@
 					}
 				}
 				
+				// Initialize the graph elements.
+				initializeGraph(truePanelSvg, dataKeys, trueArray, "green", "Defect-free Modules");	
+				initializeGraph(falsePanelSvg, dataKeys, falseArray, "red", "Defect-prone Modules");
+				
+				// Add buttons for each key and allow clicks to transition the graph.
 				var maxKeySide = Math.min(buttonHeight - 2 * buttonPaddingY - interKeyPaddingY, (svgWidth - 2 * buttonPaddingX - interKeyPaddingX * dataKeys.length) / dataKeys.length)
 				var buttonTopGroup = svg.append("g")
 				buttonTopGroup.selectAll("rect")
@@ -335,9 +346,6 @@
 					.attr("font-family", "sans-serif")
 					.attr("font-size", (maxKeySide / 2) + "px")
 					.attr("fill", "white")
-				
-				initializeGraph(truePanelSvg, dataKeys, trueArray, "green", "Defect-free Modules");	
-				initializeGraph(falsePanelSvg, dataKeys, falseArray, "red", "Defect-prone Modules");
 			});
 		</script>
     </body>
