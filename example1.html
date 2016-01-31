@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>D3 Example</title>
+        <script src="d3.v3.min.js" charset="utf-8"></script>
+	</head>
+	<body>
+		<p>Hello!</p>
+		<p>How are you?</p>
+		<script type="text/javascript">
+			var body = d3.select("body")
+			var paragraphs = d3.selectAll("p")
+			console.log(body)
+			console.log(paragraphs)
+			console.log(paragraphs[0])
+			console.log(paragraphs[0][0].textContent)
+			console.log(paragraphs[0][1].textContent)
+		</script>
+	</body>
+</html>
