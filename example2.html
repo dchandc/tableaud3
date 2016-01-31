@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>D3 Example</title>
+        <script src="d3.v3.min.js" charset="utf-8"></script>
+	</head>
+	<body>
+		<p>Hello!</p>
+		<p>How are you?</p>
+		<div style="display: inline-block;
+			width: 20px;
+			height: 20px;
+			background-color: black;
+			title="DIV"</div>
+		<script type="text/javascript">
+			var body = d3.select("body")
+			body.append("p").text("I'm fine, thanks.")
+			var div = d3.select("div")
+			div.attr("title", "DIV2").style("width", "40px")
+		</script>
+	</body>
+</html>
