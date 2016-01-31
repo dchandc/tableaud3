@@ -81,9 +81,6 @@
 				.attr("height", panelHeight)
 				.attr("fill", "white")
 				
-			var buttonTopGroup = svg.append("g");
-			var buttonBotGroup = svg.append("g");
-				
 			var keyDiv = d3.select("body")
 				.append("div")
 				.style("max-width", keyDivWidth + "px")
@@ -258,6 +255,7 @@
 				}
 				
 				var maxKeySide = Math.min(buttonHeight - 2 * buttonPaddingY - interKeyPaddingY, (svgWidth - 2 * buttonPaddingX - interKeyPaddingX * dataKeys.length) / dataKeys.length)
+				var buttonTopGroup = svg.append("g")
 				buttonTopGroup.selectAll("rect")
 					.data(dataKeys)
 					.enter().append("rect")
@@ -297,6 +295,7 @@
 					.attr("font-size", (maxKeySide / 2) + "px")
 					.attr("fill", "white")
 					
+				var buttonBotGroup = svg.append("g")
 				buttonBotGroup.selectAll("rect")
 					.data(dataKeys)
 					.enter().append("rect")
